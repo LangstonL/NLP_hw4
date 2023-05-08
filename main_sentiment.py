@@ -111,7 +111,7 @@ def main():
     ## then import model from LSTM.py below
     ## and also load model to device
     ## -----------------------------------------------
-    model = LSTM()
+    model = LSTM(vocab_size, output_size, embedding_dim, hidden_dim, n_layers)
     #model2 = CNN()
     model.to(device)
     #model2.to(device)
