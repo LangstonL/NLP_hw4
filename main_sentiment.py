@@ -66,7 +66,7 @@ def main():
     load_cpt = False #True
     ckp_path = 'cpt/name.pt'
     global_step = 0
-    # embedding_matrix = None
+    embedding_matrix = None
     ## use pre-train Glove embedding or not?
     pretrain = False
 
