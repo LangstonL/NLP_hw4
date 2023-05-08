@@ -14,7 +14,7 @@ import torch.optim as optim
 from torch.utils.data import DataLoader,Dataset,TensorDataset
 # import pandas as pd
 from DataLoader import MovieDataset
-# from LSTM import LSTMModel
+from LSTM import LSTM
 from GloveEmbed import _get_embedding
 import time
 
@@ -65,6 +65,7 @@ def main():
     clip = 5
     load_cpt = False #True
     ckp_path = 'cpt/name.pt'
+    global_step = 0
     # embedding_matrix = None
     ## use pre-train Glove embedding or not?
     pretrain = False
@@ -111,22 +112,26 @@ def main():
     ## and also load model to device
     ## -----------------------------------------------
     model = LSTM()
-    model2 = CNN()
-    model.to()
+    #model2 = CNN()
+    model.to(device)
+    #model2.to(device)
     ##-----------------------------------------------------------
     ## step 5: complete code to define optimizer and loss function
     ##-----------------------------------------------------------
-    optimizer = optim.Adam(,lr=learning_rate)  # 
+    optimizer = optim.Adam(model.parameters(),lr=learning_rate)  # 
     ## define Binary Cross Entropy Loss below
-    loss_fun = 
+    loss_fun = nn.BCELoss()
     
     ## step 6: load checkpoint
     if load_cpt:
         print("*"*10+'loading checkpoint'+'*'*10)
+        checkpoint = torch.load(ckp_path)
         ##-----------------------------------------------   
         ## complete code below to load checkpoint
         ##-----------------------------------------------
-        
+        model.load_state_dict(checkpoint['model_state_dict'])
+        optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
+        epoches = checkpoint['epoch']
 
 
     ## step 7: model training
@@ -137,17 +142,17 @@ def main():
         model.train()
         for epoches in range(num_epoches):
             for x_batch, y_labels in training_generator:
-                
+                global_step += 1
                 x_batch, y_labels = x_batch.to(device), y_labels.to(device)
                 ##-----------------------------------------------
                 ## complete code to get predict result from model
                 ##-----------------------------------------------
-                y_out = 
+                y_out = model(x_batch)
 
                 ##-----------------------------------------------
                 ## complete code to get loss
                 ##-----------------------------------------------
-                loss = 
+                loss = loss_fun(y_out, y_labels)
 
                 ## step 8: back propagation [Done]
                 optimizer.zero_grad()
@@ -160,16 +165,42 @@ def main():
             ## step 9: complete code below to save checkpoint
             ##-----------------------------------------------
             print("**** save checkpoint ****")
-    
+            ckp_path = 'checkpoint/step{}.pt'.format(global_step)
+            _save_checkpoint(ckp_path, model, epoches, global_step, optimizer)
+            
     ##------------------------------------------------------------------
     ## step 10: complete code below for model testing
     ## predict result is a single value between 0 and 1, such as 0.8, so
     ## we can use y_pred = torch.round(y_out) to predict label 1 or 0
     ##------------------------------------------------------------------
     print("----model testing now----")
-    
-    
+    test_losses = []
+    num_correct = 0
+    h = model._init_hidden(Batch_size)
+    model.eval()
+    for inputs, labels in test_generator:
+        h = tuple([each.data for each in h])
+        inputs, labels = inputs.to(device), labels.to(device)
 
+        #get predicted outputs
+        inputs = inputs.type(torch.LongTensor)
+        output = model(inputs)
+
+        #calc loss
+        test_loss = loss_fun(output.squeeze(), labels.float())
+        test_losses.append(test_loss.item())
+
+        #convert output probs to predicted class (0 or 1)
+        pred = torch.round(output.squeeze())
+
+        #compare predictions to true label
+        correct_tensor = pred.eq(labels.float().view_as(pred))
+        correct = np.squeeze(correct_tensor.device().numpy())
+        num_correct += np.sum(correct)
+    
+    print('Test loss: {:.3f}'.format(np.mean(test_losses)))
+    test_acc = num_correct/len(test_generator.dataset)
+    print('Test accuracy: {:.3f}'.format(test_acc))
 
 if __name__ == '__main__':
     time_start = time.time()
