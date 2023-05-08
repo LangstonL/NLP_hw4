@@ -112,7 +112,7 @@ def _pad_truncate_seq(x,seq_len):
     	##-----------------------------------------------------------
     	## complete code to add padding "0" to the end of list of words
     	##-----------------------------------------------------------
-        return x.extend([0] * (seq_len-len(x)))
+        return x+[0] * (seq_len-len(x))
 
 
 def main():
