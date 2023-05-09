@@ -46,16 +46,16 @@ def main():
     ## ---------------------------------------------------------
     mode = 'train'
     Batch_size =300
-    n_layers = 1 ## choose 1-3 layers
+    n_layers = 2 ## choose 1-3 layers
 
     ## input seq length aligned with data pre-processing
     input_len = 150
 
     ## word embedding length
-    embedding_dim = 50
+    embedding_dim = 400
 
     # lstm hidden dim
-    hidden_dim = 50
+    hidden_dim = 256
     # binary cross entropy
     output_size = 1
     num_epoches = 1
