@@ -60,7 +60,7 @@ def main():
     output_size = 1
     num_epoches = 3
     ## please change the learning rate by youself
-    learning_rate = 0.001
+    learning_rate = 0.005
     # gradient clipping
     clip = 5
     load_cpt = False #True
