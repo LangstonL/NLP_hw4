@@ -197,7 +197,7 @@ def main():
 
         #compare predictions to true label
         correct_tensor = pred.eq(labels.float().view_as(pred))
-        correct = np.squeeze(correct_tensor.numpy())
+        correct = np.squeeze(correct_tensor.cpu().numpy())
         num_correct += np.sum(correct)
     
     print('Test loss: {:.3f}'.format(np.mean(test_losses)))
