@@ -17,6 +17,7 @@ from DataLoader import MovieDataset
 from LSTM import LSTM
 from GloveEmbed import _get_embedding
 import time
+import wandb
 
 
 '''save checkpoint'''
@@ -27,7 +28,6 @@ def _save_checkpoint(ckp_path, model, epoches, global_step, optimizer):
                 'optimizer_state_dict': optimizer.state_dict()}
 
     torch.save(checkpoint, ckp_path)
-
 
 def main():
     gpu_id = 0
@@ -58,7 +58,7 @@ def main():
     hidden_dim = 256
     # binary cross entropy
     output_size = 1
-    num_epoches = 3
+    num_epoches = 4
     ## please change the learning rate by youself
     learning_rate = 0.005
     # gradient clipping
@@ -160,6 +160,10 @@ def main():
                 ## clip_grad_norm helps prevent the exploding gradient problem in LSTMs.
                 nn.utils.clip_grad_norm_(model.parameters(), clip)
                 optimizer.step()
+
+                if global_step%10==0:
+                    wandb.log({'iter': global_step, 'loss': loss.item()})
+                    # wandb.log({'iter': iter, 'accy': accy})
                 
             ##-----------------------------------------------   
             ## step 9: complete code below to save checkpoint
@@ -175,15 +179,15 @@ def main():
     ##------------------------------------------------------------------
     print("----model testing now----")
     test_losses = []
-    num_correct = 0
+    tp, tn, fp, fn = 0, 0, 0, 0
     h = model._init_hidden(Batch_size)
     model.eval()
+
     for inputs, labels in test_generator:
         h = tuple([each.data for each in h])
         inputs, labels = inputs.to(device), labels.to(device)
 
         #get predicted outputs
-        #inputs = inputs.type(torch.LongTensor)
         output = model(inputs)
 
         #calc loss
@@ -193,18 +197,31 @@ def main():
         #convert output probs to predicted class (0 or 1)
         pred = torch.round(output.squeeze())
 
-        #compare predictions to true label
-        correct_tensor = pred.eq(labels.float().view_as(pred))
-        correct = np.squeeze(correct_tensor.cpu().numpy())
-        num_correct += np.sum(correct)
-    
+        #collect metrics
+        tp += (labels.float().view_as(pred) * pred).sum().to(torch.float32).item()
+        tn += ((1 - labels.float().view_as(pred)) * (1 - pred)).sum().to(torch.float32).item()
+        fp += ((1 - labels.float().view_as(pred)) * pred).sum().to(torch.float32).item()
+        fn += (labels.float().view_as(pred) * (1 - pred)).sum().to(torch.float32).item()
+
+    #calculate metrics
+    acc = (tp+tn)/(tp+tn+fn+fp)
+    precision = tp / (tp + fp)
+    recall = tp / (tp + fn)
+    f1 = 2* (precision*recall) / (precision + recall)
     print('Test loss: {:.3f}'.format(np.mean(test_losses)))
-    test_acc = num_correct/len(test_generator.dataset)
-    print('Test accuracy: {:.3f}'.format(test_acc))
+    print('Test Accuracy: {:.3f}'.format(acc))
+    print('Precision: {:.3f}'.format(precision))
+    print('Recall: {:.3f}'.format(recall))
+    print('F1: {:.3f}'.format(f1))
+    print('tp: ', tp)
+    print('tn: ', tn)
+    print('fp: ', fp)
+    print('fn: ', fn)
 
 if __name__ == '__main__':
     time_start = time.time()
-    main()
+    with wandb.init(project='LSTM', name='LSTM_demo'):
+        main()
     time_end = time.time()
     print("running time: ", (time_end - time_start)/60.0, "mins")
     
