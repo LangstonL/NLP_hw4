@@ -164,11 +164,9 @@ def main():
             ##-----------------------------------------------   
             ## step 9: complete code below to save checkpoint
             ##-----------------------------------------------
-            #print("**** save checkpoint ****")
-            #ckp_path = 'checkpoint/step{}.pt'.format(global_step)
-            #_save_checkpoint(ckp_path, model, epoches, global_step, optimizer)
-            if global_step%10==0:
-                print('*', end='')
+            print("**** save checkpoint ****")
+            ckp_path = 'checkpoint/step{}.pt'.format(global_step)
+            _save_checkpoint(ckp_path, model, epoches, global_step, optimizer)
             
     ##------------------------------------------------------------------
     ## step 10: complete code below for model testing
